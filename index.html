@@ -14,11 +14,12 @@ canvas{width:100%;height:100%;display:block}
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),W=1400,H=900;cv.width=W;cv.height=H;
 const COL=[{n:'Brown',main:'#8b5a2b',dark:'#5a3612',light:'#c48d52',horse:'#4a2f1a'},{n:'Tosca',main:'#17b6a3',dark:'#0a756a',light:'#68e3d3',horse:'#e9e4d2'}];
-const GATE=[260,1140],HG=[175,1225],mid=[W/2-28,W/2+28],R=(a,b)=>a+Math.random()*(b-a),SPEC={i:{hp:30,sp:58},c:{hp:45,sp:105},e:{hp:200,sp:38},t:{hp:80,sp:30}},TBX=[640,760],twr=[{hp:100,down:false},{hp:100,down:false}],topY=s=>692-(60+170*twr[s].hp/100);
+const GATE=[260,1140],HG=[175,1225],mid=[W/2-28,W/2+28],R=(a,b)=>a+Math.random()*(b-a),SPEC={i:{hp:30,sp:58},c:{hp:45,sp:105},e:{hp:200,sp:38},t:{hp:80,sp:30},m:{hp:38,sp:0}},TBX=[640,760],twr=[{hp:100,down:false},{hp:100,down:false}],topY=s=>692-(60+170*twr[s].hp/100);
 let rt=0,rb=0,phT=0;
+const castleHP=[260,260], castleMax=260, mageTimer=[15,16], mageCasting=[0,0]; let gameOver=false, winner=-1, dragonFlames=[];
 let T,pop,day,units,proj,parts,civs,plots,phase,nextAt,first,raider,war,cap,fallen,cd,uid,paused=false;
 function say(s){cap=s}
-function init(){twr.forEach(w=>{w.hp=100;w.down=false});rt=0;rb=0;phT=0;T=0;pop=[799,799];day=1;units=[];proj=[];parts=[];civs=[];plots=[[],[]];phase='peace';nextAt=7;first=true;raider=0;war=false;fallen=[0,0];cd=[1,1];uid=0;
+function init(){twr.forEach(w=>{w.hp=100;w.down=false});castleHP[0]=castleHP[1]=castleMax;mageTimer[0]=15;mageTimer[1]=16;mageCasting[0]=mageCasting[1]=0;gameOver=false;winner=-1;dragonFlames=[];rt=0;rb=0;phT=0;T=0;pop=[799,799];day=1;units=[];proj=[];parts=[];civs=[];plots=[[],[]];phase='peace';nextAt=7;first=true;raider=0;war=false;fallen=[0,0];cd=[1,1];uid=0;
  cap='Two kingdoms live in peace… for now.';
  for(let s=0;s<2;s++){for(let i=0;i<8;i++)for(let j=0;j<2;j++)plots[s].push({x:s?W-(70+i*44):70+i*44,y:790+j*50,g:Math.random()<.5?R(.2,1):0});
   for(let k=0;k<3;k++){const p=plots[s][k*5];civs.push({k:'c',t:'f',s,x:p.x,y:p.y+10,st:'work',p:null,wt:0,id:uid++})}
@@ -42,12 +43,13 @@ function update(dt){
  schedule();
  for(const u of units){u.fight=false;u.moving=false;if(u.w>0){u.w-=dt;continue}let e=null,bd=1e9;
   for(const v of units)if(v.s!==u.s&&!(v.w>0)){const d=Math.hypot(v.x-u.x,(v.y-u.y)*1.5);if(d<bd){bd=d;e=v}}
-  if(u.type==='t'){if(twr[1-u.s].down){u.gone=1;continue}const tx=TBX[u.s];if(Math.abs(tx-u.x)>6){u.x+=Math.sign(tx-u.x)*u.sp*dt;u.moving=true}else{u.cd-=dt;if(u.cd<=0){u.cd=2.8;proj.push({s:u.s,ty:'tb',x0:u.x,y0:u.y-45,x1:u.s?245:1155,y1:topY(1-u.s)+30,t:0,T:1.7,h:230})}}continue}
+  if(u.type==='m'){continue}
+   if(u.type==='t'){if(twr[1-u.s].down){u.gone=1;continue}const tx=TBX[u.s];if(Math.abs(tx-u.x)>6){u.x+=Math.sign(tx-u.x)*u.sp*dt;u.moving=true}else{u.cd-=dt;if(u.cd<=0){u.cd=2.8;proj.push({s:u.s,ty:'tb',x0:u.x,y0:u.y-45,x1:u.s?245:1155,y1:topY(1-u.s)+30,t:0,T:1.7,h:230})}}continue}
   if(e&&bd<28){u.fight=true;u.cd-=dt;if(u.cd<=0){e.hp-=({c:15,i:11,e:30})[u.type];u.cd=.5;burst((u.x+e.x)/2,(u.y+e.y)/2-18,'#ffe27a',3,0,60)}u.y+=(e.y-u.y)*dt*2;continue}
   if(u.hold){u.ht+=dt;if((e&&bd<190)||u.ht>8)u.hold=false}
-  const tx=u.hold?mid[u.s]:GATE[1-u.s];
+  const tx=u.hold?mid[u.s]: (twr[1-u.s].down? (u.s?180:1220):GATE[1-u.s]);
   if(Math.abs(tx-u.x)>14){u.x+=Math.sign(tx-u.x)*u.sp*dt;u.moving=true}
-  else if(!u.hold){u.sg+=dt;u.fight=true;hitTower(1-u.s,({i:2.5,c:4,e:14})[u.type]*dt);if(u.sg>(u.type=='e'?3.5:1.5)){u.gone=1;const L=u.type=='e'?5:2;pop[1-u.s]-=L;fallen[1-u.s]+=L;pop[u.s]--;fallen[u.s]++;burst(u.x,u.y-20,'#ff8a2a',14)}}}
+  else if(!u.hold){u.sg+=dt;u.fight=true;if(!twr[1-u.s].down){hitTower(1-u.s,({i:2.5,c:4,e:14})[u.type]*dt)}else{castleHP[1-u.s]=Math.max(0,castleHP[1-u.s]-({i:1.5,c:3,e:9})[u.type]*dt);if(castleHP[1-u.s]<=0)destroyCastle(1-u.s)}if(u.sg>(u.type=='e'?3.5:1.5)){u.gone=1;const L=u.type=='e'?5:2;pop[1-u.s]-=L;fallen[1-u.s]+=L;pop[u.s]--;fallen[u.s]++;burst(u.x,u.y-20,'#ff8a2a',14)}}}
  for(let s=0;s<2;s++){cd[s]-=dt;if(cd[s]>0)continue;cd[s]=R(.5,.9);if(twr[s].down)continue;let tg=null,bd=1e9;const ox=s?1200:200;
   for(const u of units)if(u.s!==s){const d=Math.abs(u.x-ox);if(!(u.w>0)&&(d<430||(u.type=='t'&&d<600))&&d<bd){bd=d;tg=u}}
   if(tg){const r=Math.random(),ty=r<.4?'rock':r<.7?'fire':'arrow',Tm=.8+bd/900,dir=s?1:-1;
@@ -64,7 +66,7 @@ function update(dt){
   if(r<.4){for(let i=0;i<4;i++){const x=c.x+R(-45,45);proj.push({s:a,ty:'sheep',x0:x+R(-15,15),y0:-40,x1:x,y1:c.y-8,t:-i*.15,T:1,h:0})}}
   else proj.push({s:a,ty:r<.7?'fire':r<.85?'rock':'arrow',x0:a?1155:245,y0:topY(a)-17,x1:c.x+R(-10,10),y1:c.y-8,t:0,T:1.5,h:260})}}
  civs=civs.filter(c=>!c.rm);
- if(phase==='peace')for(const w of twr)if(w.hp<100){w.hp=Math.min(100,w.hp+1.8*dt);if(w.down&&w.hp>=35)w.down=false}
+ if(phase==='peace')for(const w of twr)if(w.hp<100){w.hp=Math.min(100,w.hp+0.12*dt);if(w.down&&w.hp>=35)w.down=false}
  for(let s=0;s<2;s++)if(twr[s].hp<60&&Math.random()<.15)parts.push({x:(s?1170:230)+R(-20,20),y:topY(s)-20,vx:R(-6,6),vy:-R(20,40),l:1.4,m:1.4,c:'rgba(70,60,55,.7)',r:R(6,11),gr:-5});
  for(const q of parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.gr*dt;q.l-=dt}parts=parts.filter(q=>q.l>0);
  for(const s of[0,1])for(const p of plots[s])if(p.g>0&&p.g<1)p.g=Math.min(1,p.g+dt/20);
@@ -126,6 +128,7 @@ function drawPlots(){for(const s of[0,1])for(const p of plots[s]){g.fillStyle='#
 function drawProj(p){if(p.t<0)return;const q=pos(p);if(p.ty==='sheep'){g.save();g.translate(q.x,q.y);g.rotate(T*3+p.x0);g.fillStyle='#f4f1ea';for(const[x,y]of[[-5,0],[5,0],[0,-4],[0,4]]){g.beginPath();g.arc(x,y,7,0,7);g.fill()}g.fillStyle='#2b2118';g.beginPath();g.arc(10,0,4.5,0,7);g.fill();g.strokeStyle='#2b2118';g.lineWidth=2;g.beginPath();g.moveTo(-5,6);g.lineTo(-6,12);g.moveTo(5,6);g.lineTo(6,12);g.stroke();g.restore()}else if(p.ty==='rock'||p.ty==='tb'){g.fillStyle='#6f6a64';g.beginPath();g.arc(q.x,q.y,8,0,7);g.fill();g.fillStyle='#a39b90';g.beginPath();g.arc(q.x-2,q.y-2,3,0,7);g.fill()}
  else if(p.ty==='fire'){g.fillStyle='rgba(255,140,30,.35)';g.beginPath();g.arc(q.x,q.y,15,0,7);g.fill();g.fillStyle='#ff8a1c';g.beginPath();g.arc(q.x,q.y,8,0,7);g.fill();g.fillStyle='#fff0a0';g.beginPath();g.arc(q.x,q.y,4,0,7);g.fill()}
  else{const n=pos({...p,t:Math.min(p.T,p.t+.03)}),a=Math.atan2(n.y-q.y,n.x-q.x);g.save();g.translate(q.x,q.y);g.rotate(a);g.strokeStyle='#3b2a1c';g.lineWidth=2;g.beginPath();g.moveTo(-9,0);g.lineTo(9,0);g.stroke();g.fillStyle='#ccc';g.beginPath();g.moveTo(9,-3);g.lineTo(15,0);g.lineTo(9,3);g.fill();g.restore()}}
+function destroyCastle(s){if(gameOver)return;gameOver=true;winner=1-s;war=false;phase='ended';say(COL[winner].n+' wins! '+COL[s].n+' castle destroyed!');for(const c of civs)if(c.s===s&&c.t!=='p'){c.st='panic';c.t='p';c.vx=R(-70,70);c.vy=R(-35,35);c.ct=R(.2,.8)}burst(s?1170:230,570,'#ff5a1f',100,250,220);for(let i=0;i<60;i++)parts.push({x:(s?1100:300)+R(-80,80),y:R(500,700),vx:R(-25,25),vy:-R(80,170),l:R(1,3),m:3,c:['#ff7a18','#ffd23f','#ff4d1c','#555'][i%4],r:R(5,14),gr:-10});}
 function hitTower(s,d){const w=twr[s];if(w.hp<=0)return;w.hp=Math.max(0,w.hp-d);if(w.hp<=0&&!w.down){w.down=true;collapse(s)}}
 function collapse(s){rt=16;rb=1;say(COL[s].n+' tower collapses! 22 civilians run in panic, '+COL[1-s].n+' bombards them!');burst(s?1170:230,560,'#a99a85',40,250,200);
  for(let i=0;i<22;i++)civs.push({k:'c',t:'p',s,x:HG[s]+(s?-1:1)*R(20,160),y:R(650,780),vx:0,vy:0,ct:0,st:'panic',dir:1,mv:1,id:uid++})}
@@ -152,12 +155,16 @@ function hud(){g.textBaseline='alphabetic';g.fillStyle='#fff';
  g.fillStyle=war?'#ff7a5a':'#8be08b';g.font='700 20px system-ui,sans-serif';g.fillText(war?'WAR':'PEACE',700,125);
  g.font='600 28px system-ui,sans-serif';const w=g.measureText(cap).width+48;box(700-w/2,150,w,50);g.fillStyle='#fff';g.fillText(cap,700,185);
  g.textAlign='left';g.font='500 16px system-ui,sans-serif';g.fillStyle='rgba(255,255,255,.7)';g.fillText('Space = pause · R = restart',16,886)}
-function draw(){g.drawImage(bg,0,0);for(const c of clouds)cloud(((c[0]+T*8*c[2])%(W+200))-100,c[1],c[2]);
+function draw(){g.drawImage(bg,0,0);
+  for(let s=0;s<2;s++){if(castleHP[s]<castleMax){g.save();g.translate(s?W:0,0);g.scale(s?-1:1,1);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(65,455,190,12);g.fillStyle='#ff5638';g.fillRect(65,455,190*castleHP[s]/castleMax,12);g.fillStyle='#fff';g.font='bold 16px system-ui';g.fillText('MAIN CASTLE '+Math.ceil(castleHP[s])+'/'+castleMax,65,445);g.restore()}if(mageCasting[s]>0){g.fillStyle='#d9a7ff';g.font='bold 17px system-ui';g.textAlign='center';g.fillText('MAGE SUMMONING',s?1135:265,440)}}
+  for(const f of dragonFlames){if(f.t<=f.duration){g.save();g.globalAlpha=.9;const x=f.target?1120:280;g.fillStyle='#ff5c1a';g.beginPath();g.ellipse(x,570,65,40,0,0,7);g.fill();g.fillStyle='#ffd33d';g.beginPath();g.ellipse(x,570,42,25,0,0,7);g.fill();g.fillStyle='#fff1a1';g.beginPath();g.ellipse(x,570,20,12,0,0,7);g.fill();g.restore()}}
+  for(const c of clouds)cloud(((c[0]+T*8*c[2])%(W+200))-100,c[1],c[2]);
  for(const s of[0,1]){front(s);if(!twr[s].down)flag(s,245,topY(s));flag(s,65,490);bar(s)}drawPlots();
  const items=[...units,...civs].sort((a,b)=>a.y-b.y);for(const o of items){if(o.k==='u'){if(o.w>0)continue;(o.type=='c'?drawCav:o.type=='e'?drawEle:o.type=='t'?drawTb:drawInf)(o);if(o.hp<o.max){const hh={c:64,e:104,t:75,i:46}[o.type];g.fillStyle='#000';g.fillRect(o.x-12,o.y-hh,24,4);g.fillStyle='#e04b3a';g.fillRect(o.x-12,o.y-hh,24*o.hp/o.max,4)}}else drawCiv(o)}
  for(const p of proj)drawProj(p);
  for(const q of parts){g.globalAlpha=Math.max(0,q.l/q.m);g.fillStyle=q.c;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill()}g.globalAlpha=1;hud();
- if(paused){g.fillStyle='rgba(0,0,0,.4)';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.textAlign='center';g.font='800 80px system-ui,sans-serif';g.fillText('PAUSED',700,470)}}
+ if(gameOver){g.fillStyle='rgba(15,8,5,.68)';g.fillRect(0,0,W,H);g.textAlign='center';g.fillStyle='#ffd36b';g.font='900 72px system-ui,sans-serif';g.fillText(COL[winner].n.toUpperCase()+' KINGDOM WINS!',700,410);g.fillStyle='#fff';g.font='600 30px system-ui,sans-serif';g.fillText('The main castle has fallen. The war is over.',700,465);g.font='500 24px system-ui,sans-serif';g.fillText('Press R to restart',700,520)}
+  if(paused){g.fillStyle='rgba(0,0,0,.4)';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.textAlign='center';g.font='800 80px system-ui,sans-serif';g.fillText('PAUSED',700,470)}}
 let last=performance.now();
 function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;if(!paused)update(dt);draw();requestAnimationFrame(loop)}
 addEventListener('keydown',e=>{if(e.code==='Space'){paused=!paused;e.preventDefault()}if(e.key==='r'||e.key==='R')init()});
