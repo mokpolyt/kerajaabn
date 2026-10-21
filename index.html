@@ -16,16 +16,15 @@ const cv=document.getElementById('c'),g=cv.getContext('2d'),W=1400,H=900;cv.widt
 const COL=[{n:'Brown',main:'#8b5a2b',dark:'#5a3612',light:'#c48d52',horse:'#4a2f1a'},{n:'Tosca',main:'#17b6a3',dark:'#0a756a',light:'#68e3d3',horse:'#e9e4d2'}];
 const GATE=[260,1140],HG=[175,1225],mid=[W/2-28,W/2+28],R=(a,b)=>a+Math.random()*(b-a),SPEC={i:{hp:30,sp:58},c:{hp:45,sp:105},e:{hp:200,sp:38},t:{hp:80,sp:30},m:{hp:38,sp:0},g:{hp:180,sp:0}},TBX=[640,760],twr=[{hp:100,down:false},{hp:100,down:false}],topY=s=>692-(60+170*twr[s].hp/100);
 let rt=0,rb=0,phT=0;
-const castleHP=[260,260], castleMax=260, mageTimer=[15,16], mageCasting=[0,0]; let troopTimer=[7,11], gameOver=false, winner=-1, dragonFlames=[];
+const castleHP=[260,260], castleMax=260, mageTimer=[15,16], mageCasting=[0,0]; let troopTimer=[16,22], gameOver=false, winner=-1, dragonFlames=[];
 let T,pop,day,units,proj,parts,civs,plots,phase,nextAt,first,raider,war,cap,fallen,cd,uid,paused=false;
 function say(s){cap=s}
-function init(){twr.forEach(w=>{w.hp=100;w.down=false});castleHP[0]=castleHP[1]=castleMax;mageTimer[0]=15;mageTimer[1]=16;mageCasting[0]=mageCasting[1]=0;troopTimer=[R(7,16),R(7,16)];gameOver=false;winner=-1;dragonFlames=[];rt=0;rb=0;phT=0;T=0;pop=[799,799];day=1;units=[];proj=[];parts=[];civs=[];plots=[[],[]];phase='peace';nextAt=7;first=true;raider=0;war=false;fallen=[0,0];cd=[1,1];uid=0;
+function init(){twr.forEach(w=>{w.hp=100;w.down=false});castleHP[0]=castleHP[1]=castleMax;mageTimer[0]=15;mageTimer[1]=16;mageCasting[0]=mageCasting[1]=0;troopTimer=[R(16,27),R(16,27)];gameOver=false;winner=-1;dragonFlames=[];rt=0;rb=0;phT=0;T=0;pop=[799,799];day=1;units=[];proj=[];parts=[];civs=[];plots=[[],[]];phase='peace';nextAt=7;first=true;raider=0;war=false;fallen=[0,0];cd=[1,1];uid=0;
  cap='Two kingdoms live in peace… for now.';
  for(let s=0;s<2;s++){for(let i=0;i<8;i++)for(let j=0;j<2;j++)plots[s].push({x:s?W-(70+i*44):70+i*44,y:790+j*50,g:Math.random()<.5?R(.2,1):0});
   for(let k=0;k<3;k++){const p=plots[s][k*5];civs.push({k:'c',t:'f',s,x:p.x,y:p.y+10,st:'work',p:null,wt:0,id:uid++})}
   civs.push({k:'c',t:'w',s,x:s?1100:300,y:600+s*10,dir:s?-1:1,lo:s?760:300,hi:s?1100:640,st:'work',id:uid++})}}
 function mk(s,type,i,hold){const q=SPEC[type];return{k:'u',s,type,x:HG[s],y:R(655,760),hp:q.hp,max:q.hp,sp:q.sp,hold,ht:0,cd:0,sg:0,w:i*.2,id:uid++}}
-function summonGuards(s){const n=10+Math.floor(Math.random()*6);for(let i=0;i<n;i++){const u=mk(s,'g',i,false);u.x=HG[s]+(s?-1:1)*R(5,95);u.y=R(660,770);u.guard=true;u.homeX=HG[s];u.w=i*.08;units.push(u)}say(COL[s].n+' deploys '+n+' armored castle guards!')}
 function launch(s,inf,cav,hold,el=0,tb=0){let i=0;phT=T;for(let a=0;a<tb;a++)units.push(mk(s,'t',i++,hold));for(let a=0;a<el;a++)units.push(mk(s,'e',i++,hold));for(let a=0;a<cav;a++)units.push(mk(s,'c',i++,hold));for(let a=0;a<inf;a++)units.push(mk(s,'i',i++,hold))}
 function burst(x,y,c,n,gr=200,sp=120){for(let i=0;i<n;i++)parts.push({x,y,vx:R(-sp,sp),vy:R(-sp,sp*.3),l:R(.4,1),m:1,c,r:R(2,5),gr})}
 function endWar(){war=false;phase='peace';nextAt=T+R(9,15);say('Peace returns to the land.')}
@@ -36,9 +35,9 @@ function schedule(dt){
   if(troopTimer[s]<=0){
    const d=1-s,n=10+Math.floor(Math.random()*27),cav=Math.random()<.48?2+Math.floor(Math.random()*6):0;
    const tb=Math.random()<.18?1:0,el=Math.random()<.18?1+Math.floor(Math.random()*2):0;
-   launch(s,n,cav,false,el,tb);summonGuards(d);phase='raid';war=true;raider=s;
+   launch(s,n,cav,false,el,tb);phase='raid';war=true;raider=s;
    say(COL[s].n+' sends '+n+' troops toward '+COL[d].n+'!');
-   troopTimer[s]=R(7,16);
+   troopTimer[s]=R(16,27);
   }
  }
  if(phase!=='peace'&&T-phT>120)units.forEach(u=>{if(u.type!=='g')u.gone=1});
@@ -46,8 +45,8 @@ function schedule(dt){
 }
 function update(dt){
  if(gameOver)return; dt*=0.42; T+=dt;
- for(let s=0;s<2;s++){mageTimer[s]-=dt;if(mageTimer[s]<=0){mageTimer[s]+=(s?16:15);mageCasting[s]=3.5;if(Math.random()<.33){const own=Math.random()<.12,target=own?s:1-s;dragonFlames.push({s,target,t:0,duration:6,seed:Math.random()*100});say(COL[s].n+' mage summons a dragon! '+(own?'It attacks its own castle!':'It attacks '+COL[target].n+' castle!'))}else say(COL[s].n+' mage fails to summon a dragon.')}}
- for(const f of dragonFlames){f.t+=dt;if(f.t<=f.duration){castleHP[f.target]=Math.max(0,castleHP[f.target]-7*dt);if(castleHP[f.target]<=0)destroyCastle(f.target)}}
+ for(let s=0;s<2;s++){mageTimer[s]-=dt;if(mageTimer[s]<=0){mageTimer[s]+=(s?16:15);mageCasting[s]=3.5;if(Math.random()<.33){const target=1-s,enemyUnits=units.filter(u=>u.s===target&&u.type!=='m'&&!(u.w>0)&&!u.gone),hitTroop=enemyUnits.length>0&&Math.random()<.62;const victim=hitTroop?enemyUnits[Math.floor(Math.random()*enemyUnits.length)]:null;dragonFlames.push({s,target,targetId:victim?victim.id:null,t:0,duration:6,seed:Math.random()*100});say(COL[s].n+' mage summons a dragon! It attacks '+(victim?'an enemy troop':'the enemy castle')+'!')}else say(COL[s].n+' mage fails to summon a dragon.')}}
+ for(const f of dragonFlames){f.t+=dt;if(f.t<=f.duration){if(f.targetId!==null){const victim=units.find(u=>u.id===f.targetId&&u.s===f.target);if(victim)victim.hp-=45*dt;else f.targetId=null}if(f.targetId===null){castleHP[f.target]=Math.max(0,castleHP[f.target]-7*dt);if(castleHP[f.target]<=0)destroyCastle(f.target)}}}
  dragonFlames=dragonFlames.filter(f=>f.t<f.duration);for(let s=0;s<2;s++)mageCasting[s]=Math.max(0,mageCasting[s]-dt);const nd=Math.floor(T/4)+1;if(nd!==day){day=nd;for(let s=0;s<2;s++)pop[s]+=Math.round(pop[s]*.0015+R(0,2))}
  schedule(dt);
  for(const u of units){u.fight=false;u.moving=false;if(u.w>0){u.w-=dt;continue}let e=null,bd=1e9;
@@ -168,7 +167,7 @@ function hud(){g.textBaseline='alphabetic';g.fillStyle='#fff';
 function draw(){g.drawImage(bg,0,0);
   for(let s=0;s<2;s++){if(castleHP[s]<castleMax){g.save();g.translate(s?W:0,0);g.scale(s?-1:1,1);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(65,455,190,12);g.fillStyle='#ff5638';g.fillRect(65,455,190*castleHP[s]/castleMax,12);g.fillStyle='#fff';g.font='bold 16px system-ui';g.fillText('MAIN CASTLE '+Math.ceil(castleHP[s])+'/'+castleMax,65,445);g.restore()}}
   for(const f of dragonFlames){if(f.t<=f.duration){
-   const fromX=f.s?1125:275,toX=f.target?160:1240,progress=Math.min(1,f.t/f.duration),x=fromX+(toX-fromX)*progress,y=285+Math.sin(f.t*4+f.seed)*22;
+   const fromX=f.s?1125:275,victim=f.targetId!==null?units.find(u=>u.id===f.targetId&&u.s===f.target):null,toX=victim?victim.x:(f.target?160:1240),toY=victim?victim.y-18:525,progress=Math.min(1,f.t/f.duration),x=fromX+(toX-fromX)*progress,y=245+Math.sin(f.t*4+f.seed)*22;
    const dir=toX>=fromX?1:-1;
    g.save();g.translate(x,y);g.scale(dir,1);
    // Large flapping wings, long body, tail, neck and horned head make the dragon visibly airborne.
@@ -182,7 +181,7 @@ function draw(){g.drawImage(bg,0,0);
    g.fillStyle='#ffcf57';g.beginPath();g.arc(35,-9,2.5,0,Math.PI*2);g.fill();
    g.restore();
    // Fire falls from the flying dragon onto the target castle; no cross-screen bridge.
-   if(f.t>1.2){const fx=toX,fy=525;g.save();g.globalAlpha=.8+Math.sin(T*18)*.15;g.strokeStyle='rgba(255,70,10,.3)';g.lineWidth=25;g.beginPath();g.moveTo(x+dir*30,y+2);g.quadraticCurveTo(fx+(x-fx)*.2,390,fx,fy);g.stroke();g.strokeStyle='#ff5a16';g.lineWidth=13;g.beginPath();g.moveTo(x+dir*30,y+2);g.quadraticCurveTo(fx+(x-fx)*.2,390,fx,fy);g.stroke();g.fillStyle='#ffd34b';g.beginPath();g.ellipse(fx,fy,38+Math.sin(T*13)*7,23,0,0,Math.PI*2);g.fill();g.fillStyle='#fff1a1';g.beginPath();g.ellipse(fx,fy,15,10,0,0,Math.PI*2);g.fill();g.restore()}
+   if(f.t>1.2){const fx=toX,fy=toY;g.save();g.globalAlpha=.8+Math.sin(T*18)*.15;g.strokeStyle='rgba(255,70,10,.3)';g.lineWidth=25;g.beginPath();g.moveTo(x+dir*30,y+2);g.quadraticCurveTo(fx+(x-fx)*.2,390,fx,fy);g.stroke();g.strokeStyle='#ff5a16';g.lineWidth=13;g.beginPath();g.moveTo(x+dir*30,y+2);g.quadraticCurveTo(fx+(x-fx)*.2,390,fx,fy);g.stroke();g.fillStyle='#ffd34b';g.beginPath();g.ellipse(fx,fy,victim?25:38+Math.sin(T*13)*7,victim?13:23,0,0,Math.PI*2);g.fill();g.fillStyle='#fff1a1';g.beginPath();g.ellipse(fx,fy,victim?10:15,victim?6:10,0,0,Math.PI*2);g.fill();g.restore()}
   }}
   for(const c of clouds)cloud(((c[0]+T*8*c[2])%(W+200))-100,c[1],c[2]);
  for(const s of[0,1]){front(s);if(!twr[s].down)flag(s,245,topY(s));flag(s,65,490);bar(s)}
