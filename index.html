@@ -14,7 +14,7 @@ canvas{width:100%;height:100%;display:block}
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),W=1400,H=900;cv.width=W;cv.height=H;
 const COL=[{n:'Brown',main:'#8b5a2b',dark:'#5a3612',light:'#c48d52',horse:'#4a2f1a'},{n:'Tosca',main:'#17b6a3',dark:'#0a756a',light:'#68e3d3',horse:'#e9e4d2'}];
-const GATE=[260,1140],HG=[175,1225],mid=[W/2-28,W/2+28],R=(a,b)=>a+Math.random()*(b-a),SPEC={i:{hp:30,sp:58},c:{hp:45,sp:105},e:{hp:200,sp:38},t:{hp:80,sp:30},m:{hp:38,sp:0}},TBX=[640,760],twr=[{hp:100,down:false},{hp:100,down:false}],topY=s=>692-(60+170*twr[s].hp/100);
+const GATE=[260,1140],HG=[175,1225],mid=[W/2-28,W/2+28],R=(a,b)=>a+Math.random()*(b-a),SPEC={i:{hp:30,sp:58},c:{hp:45,sp:105},e:{hp:200,sp:38},t:{hp:80,sp:30},m:{hp:38,sp:0},g:{hp:180,sp:0}},TBX=[640,760],twr=[{hp:100,down:false},{hp:100,down:false}],topY=s=>692-(60+170*twr[s].hp/100);
 let rt=0,rb=0,phT=0;
 const castleHP=[260,260], castleMax=260, mageTimer=[15,16], mageCasting=[0,0]; let gameOver=false, winner=-1, dragonFlames=[];
 let T,pop,day,units,proj,parts,civs,plots,phase,nextAt,first,raider,war,cap,fallen,cd,uid,paused=false;
@@ -25,25 +25,30 @@ function init(){twr.forEach(w=>{w.hp=100;w.down=false});castleHP[0]=castleHP[1]=
   for(let k=0;k<3;k++){const p=plots[s][k*5];civs.push({k:'c',t:'f',s,x:p.x,y:p.y+10,st:'work',p:null,wt:0,id:uid++})}
   civs.push({k:'c',t:'w',s,x:s?1100:300,y:600+s*10,dir:s?-1:1,lo:s?760:300,hi:s?1100:640,st:'work',id:uid++})}}
 function mk(s,type,i,hold){const q=SPEC[type];return{k:'u',s,type,x:HG[s],y:R(655,760),hp:q.hp,max:q.hp,sp:q.sp,hold,ht:0,cd:0,sg:0,w:i*.2,id:uid++}}
+function summonGuards(s){const n=10+Math.floor(Math.random()*6);for(let i=0;i<n;i++){const u=mk(s,'g',i,false);u.x=HG[s]+(s?-1:1)*R(5,95);u.y=R(660,770);u.guard=true;u.homeX=HG[s];u.w=i*.08;units.push(u)}say(COL[s].n+' deploys '+n+' armored castle guards!')}
 function launch(s,inf,cav,hold,el=0,tb=0){let i=0;phT=T;for(let a=0;a<tb;a++)units.push(mk(s,'t',i++,hold));for(let a=0;a<el;a++)units.push(mk(s,'e',i++,hold));for(let a=0;a<cav;a++)units.push(mk(s,'c',i++,hold));for(let a=0;a<inf;a++)units.push(mk(s,'i',i++,hold))}
 function burst(x,y,c,n,gr=200,sp=120){for(let i=0;i<n;i++)parts.push({x,y,vx:R(-sp,sp),vy:R(-sp,sp*.3),l:R(.4,1),m:1,c,r:R(2,5),gr})}
 function endWar(){war=false;phase='peace';nextAt=T+R(9,15);say('Peace returns to the land.')}
 function schedule(){if(phase!=='peace'&&T-phT>80)units.forEach(u=>u.gone=1);
  if(phase==='peace'&&T>=nextAt){
   if(!first&&Math.random()<.25){say('A quiet day. Farmers plant, neighbors walk their dogs.');nextAt=T+R(8,13)}
-  else{first=false;raider=Math.random()<.5?0:1;const d=1-raider,n=12+Math.floor(Math.random()*56),tb=Math.random()<.23?1:0,el=Math.random()<.26?1+Math.floor(Math.random()*3):0,ex=[tb&&'a trebuchet',el&&el+(el>1?' elephants':' elephant')].filter(Boolean);launch(raider,n,0,false,el,tb);phase='raid';war=true;say(COL[raider].n+' attacks '+COL[d].n+' with '+n+' troops'+(ex.length?' plus '+ex.join(' and '):'')+'!')}}
+  else{first=false;raider=Math.random()<.5?0:1;const d=1-raider,n=12+Math.floor(Math.random()*56),tb=Math.random()<.23?1:0,el=Math.random()<.26?1+Math.floor(Math.random()*3):0,ex=[tb&&'a trebuchet',el&&el+(el>1?' elephants':' elephant')].filter(Boolean);launch(raider,n,0,false,el,tb);summonGuards(d);phase='raid';war=true;say(COL[raider].n+' attacks '+COL[d].n+' with '+n+' troops'+(ex.length?' plus '+ex.join(' and '):'')+'!')}}
  else if(phase==='raid'&&!units.length&&!rt){
-  if(Math.random()<.32){const d=1-raider,meet=Math.random()<.44;phase='revenge';launch(d,9+Math.floor(Math.random()*22),4+Math.floor(Math.random()*7),meet);
-   if(meet){launch(raider,8+Math.floor(Math.random()*18),3+Math.floor(Math.random()*6),true);say(COL[d].n+' strikes back with cavalry. '+COL[raider].n+' sends troops too: battle in the middle!')}
+  if(Math.random()<.32){const d=1-raider,meet=Math.random()<.44;phase='revenge';launch(d,9+Math.floor(Math.random()*22),4+Math.floor(Math.random()*7),meet);summonGuards(raider);
+   if(meet){launch(raider,8+Math.floor(Math.random()*18),3+Math.floor(Math.random()*6),true);summonGuards(d);say(COL[d].n+' strikes back with cavalry. '+COL[raider].n+' sends troops too: battle in the middle!')}
    else say(COL[d].n+' takes revenge with cavalry and infantry!')}
   else endWar()}
  else if(phase==='revenge'&&!units.length&&!rt)endWar()}
 function update(dt){
- T+=dt;const nd=Math.floor(T/4)+1;if(nd!==day){day=nd;for(let s=0;s<2;s++)pop[s]+=Math.round(pop[s]*.0015+R(0,2))}
+ if(gameOver)return; dt*=0.42; T+=dt;
+ for(let s=0;s<2;s++){mageTimer[s]-=dt;if(mageTimer[s]<=0){mageTimer[s]+=(s?16:15);mageCasting[s]=3.5;if(Math.random()<.33){const own=Math.random()<.12,target=own?s:1-s;dragonFlames.push({s,target,t:0,duration:6});say(COL[s].n+' mage summons a dragon! '+(own?'It attacks its own castle!':'It attacks '+COL[target].n+' castle!'))}else say(COL[s].n+' mage fails to summon a dragon.')}}
+ for(const f of dragonFlames){f.t+=dt;if(f.t<=f.duration){castleHP[f.target]=Math.max(0,castleHP[f.target]-7*dt);if(castleHP[f.target]<=0)destroyCastle(f.target)}}
+ dragonFlames=dragonFlames.filter(f=>f.t<f.duration);for(let s=0;s<2;s++)mageCasting[s]=Math.max(0,mageCasting[s]-dt);const nd=Math.floor(T/4)+1;if(nd!==day){day=nd;for(let s=0;s<2;s++)pop[s]+=Math.round(pop[s]*.0015+R(0,2))}
  schedule();
  for(const u of units){u.fight=false;u.moving=false;if(u.w>0){u.w-=dt;continue}let e=null,bd=1e9;
   for(const v of units)if(v.s!==u.s&&!(v.w>0)){const d=Math.hypot(v.x-u.x,(v.y-u.y)*1.5);if(d<bd){bd=d;e=v}}
   if(u.type==='m'){continue}
+   if(u.type==='g'){if(u.guard){let target=null,dist=1e9;for(const v of units)if(v.s!==u.s&&v.type!=='t'&&!(v.w>0)){const d=Math.hypot(v.x-u.x,(v.y-u.y)*1.4);if(d<dist){dist=d;target=v}}if(target&&dist<250){u.fight=true;if(dist>23){u.x+=Math.sign(target.x-u.x)*65*dt;u.y+=(target.y-u.y)*Math.min(1,dt*2)}else{u.cd-=dt;if(u.cd<=0){target.hp-=26;u.cd=.65;burst((u.x+target.x)/2,(u.y+target.y)/2-20,'#ffe27a',4,0,60)}}}else{u.x+=(u.homeX-u.x)*Math.min(1,dt*2);u.y+=(700-u.y)*Math.min(1,dt*2)}continue}}
    if(u.type==='t'){if(twr[1-u.s].down){u.gone=1;continue}const tx=TBX[u.s];if(Math.abs(tx-u.x)>6){u.x+=Math.sign(tx-u.x)*u.sp*dt;u.moving=true}else{u.cd-=dt;if(u.cd<=0){u.cd=2.8;proj.push({s:u.s,ty:'tb',x0:u.x,y0:u.y-45,x1:u.s?245:1155,y1:topY(1-u.s)+30,t:0,T:1.7,h:230})}}continue}
   if(e&&bd<28){u.fight=true;u.cd-=dt;if(u.cd<=0){e.hp-=({c:15,i:11,e:30})[u.type];u.cd=.5;burst((u.x+e.x)/2,(u.y+e.y)/2-18,'#ffe27a',3,0,60)}u.y+=(e.y-u.y)*dt*2;continue}
   if(u.hold){u.ht+=dt;if((e&&bd<190)||u.ht>8)u.hold=false}
@@ -105,7 +110,7 @@ function shadow(w){g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,0,w,3
 function drawInf(u){const c=COL[u.s],ph=u.moving?Math.sin(T*10+u.id):0;g.save();g.translate(u.x,u.y);g.scale(u.s?-1:1,1);shadow(11);
  g.strokeStyle='#2b2118';g.lineWidth=3;g.beginPath();g.moveTo(-2,-12);g.lineTo(-2+ph*5,0);g.moveTo(2,-12);g.lineTo(2-ph*5,0);g.stroke();
  g.fillStyle=c.main;g.fillRect(-6,-27,12,16);g.fillStyle='#f0c9a0';g.beginPath();g.arc(0,-32,5,0,7);g.fill();g.fillStyle=c.dark;g.fillRect(-5.5,-38,11,4.5);
- const sw=u.fight?Math.sin(T*16+u.id)*.9:0;g.strokeStyle='#e4e4e4';g.lineWidth=2.5;g.beginPath();g.moveTo(6,-20);g.lineTo(6+Math.cos(-1.1+sw)*17,-20+Math.sin(-1.1+sw)*17);g.stroke();
+ if(u.type==='g'){g.fillStyle='#b7bdc5';g.fillRect(-8,-29,16,17);g.fillStyle='#6e7782';g.fillRect(-7,-37,14,9);g.fillStyle='#e0e4e8';g.fillRect(-6,-39,12,3);g.strokeStyle='#e2e6ea';g.lineWidth=3;g.beginPath();g.moveTo(7,-22);g.lineTo(18,-39);g.stroke();g.restore();return}const sw=u.fight?Math.sin(T*16+u.id)*.9:0;g.strokeStyle='#e4e4e4';g.lineWidth=2.5;g.beginPath();g.moveTo(6,-20);g.lineTo(6+Math.cos(-1.1+sw)*17,-20+Math.sin(-1.1+sw)*17);g.stroke();
  g.fillStyle=c.light;g.strokeStyle=c.dark;g.lineWidth=1.5;g.beginPath();g.arc(-5,-19,6,0,7);g.fill();g.stroke();g.restore()}
 function drawCav(u){const c=COL[u.s],ph=u.moving?Math.sin(T*14+u.id):0;g.save();g.translate(u.x,u.y);g.scale(u.s?-1:1,1);shadow(24);
  g.strokeStyle=c.horse;g.lineWidth=4;g.beginPath();for(const[x,k]of[[-14,1],[-9,-1],[10,-1],[15,1]]){g.moveTo(x,-16);g.lineTo(x+ph*k*8,0)}g.stroke();
@@ -150,19 +155,18 @@ function drawTb(u){const c=COL[u.s],ph=u.moving?1:Math.max(0,u.cd/2.8),a=-.4-1.8
 function box(x,y,w,h,col){g.fillStyle='rgba(22,15,10,.66)';g.beginPath();g.roundRect(x,y,w,h,16);g.fill();if(col){g.fillStyle=col;g.beginPath();g.roundRect(x,y,10,h,[16,0,0,16]);g.fill()}}
 function hud(){g.textBaseline='alphabetic';g.fillStyle='#fff';
  for(const s of[0,1]){const x=s?1080:20;box(x,16,300,118,COL[s].main);g.textAlign='left';g.fillStyle=COL[s].light;g.font='700 22px system-ui,sans-serif';g.fillText(COL[s].n.toUpperCase()+' KINGDOM',x+28,48);
-  g.fillStyle='#fff';g.font='800 54px system-ui,sans-serif';g.fillText(pop[s],x+28,100);g.fillStyle='#cdbfae';g.font='500 19px system-ui,sans-serif';g.fillText('people · fallen '+fallen[s],x+28,124)}
+  g.fillStyle='#fff';g.font='800 54px system-ui,sans-serif';g.fillText(pop[s],x+28,100);g.fillStyle='#cdbfae';g.font='500 19px system-ui,sans-serif';g.fillText('people · fallen '+fallen[s],x+28,124);g.fillStyle='#211';g.fillRect(x+150,76,125,10);g.fillStyle=gameOver&&winner!==s?'#555':'#ff6a35';g.fillRect(x+150,76,125*castleHP[s]/castleMax,10);g.fillStyle='#fff';g.font='600 13px system-ui';g.fillText('CASTLE '+Math.ceil(castleHP[s])+'/'+castleMax,x+150,101)}
  box(555,16,290,118);g.textAlign='center';g.fillStyle='#cdbfae';g.font='700 22px system-ui,sans-serif';g.fillText('DAY',700,46);g.fillStyle='#fff';g.font='800 56px system-ui,sans-serif';g.fillText(day,700,100);
  g.fillStyle=war?'#ff7a5a':'#8be08b';g.font='700 20px system-ui,sans-serif';g.fillText(war?'WAR':'PEACE',700,125);
  g.font='600 28px system-ui,sans-serif';const w=g.measureText(cap).width+48;box(700-w/2,150,w,50);g.fillStyle='#fff';g.fillText(cap,700,185);
- g.textAlign='left';g.font='500 16px system-ui,sans-serif';g.fillStyle='rgba(255,255,255,.7)';g.fillText('Space = pause · R = restart',16,886)}
+ g.textAlign='left';g.font='500 16px system-ui,sans-serif';g.fillStyle='rgba(255,255,255,.7)';g.fillText('Space = pause · R = restart · Towers repair very slowly',16,886);if(gameOver){g.fillStyle='rgba(18,10,8,.72)';g.fillRect(0,0,W,H);g.textAlign='center';g.fillStyle='#ffcf85';g.font='900 76px system-ui';g.fillText(COL[winner].n.toUpperCase()+' KINGDOM WINS',700,410);g.fillStyle='#fff';g.font='600 32px system-ui';g.fillText('The enemy castle has burned. Press R to restart.',700,465)}}
 function draw(){g.drawImage(bg,0,0);
-  for(let s=0;s<2;s++){if(castleHP[s]<castleMax){g.save();g.translate(s?W:0,0);g.scale(s?-1:1,1);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(65,455,190,12);g.fillStyle='#ff5638';g.fillRect(65,455,190*castleHP[s]/castleMax,12);g.fillStyle='#fff';g.font='bold 16px system-ui';g.fillText('MAIN CASTLE '+Math.ceil(castleHP[s])+'/'+castleMax,65,445);g.restore()}if(mageCasting[s]>0){g.fillStyle='#d9a7ff';g.font='bold 17px system-ui';g.textAlign='center';g.fillText('MAGE SUMMONING',s?1135:265,440)}}
-  for(const f of dragonFlames){if(f.t<=f.duration){g.save();g.globalAlpha=.9;const x=f.target?1120:280;g.fillStyle='#ff5c1a';g.beginPath();g.ellipse(x,570,65,40,0,0,7);g.fill();g.fillStyle='#ffd33d';g.beginPath();g.ellipse(x,570,42,25,0,0,7);g.fill();g.fillStyle='#fff1a1';g.beginPath();g.ellipse(x,570,20,12,0,0,7);g.fill();g.restore()}}
+  for(let s=0;s<2;s++){if(castleHP[s]<castleMax){g.save();g.translate(s?W:0,0);g.scale(s?-1:1,1);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(65,455,190,12);g.fillStyle='#ff5638';g.fillRect(65,455,190*castleHP[s]/castleMax,12);g.fillStyle='#fff';g.font='bold 16px system-ui';g.fillText('MAIN CASTLE '+Math.ceil(castleHP[s])+'/'+castleMax,65,445);g.restore()}if(mageCasting[s]>0){const mx=s?1135:265,my=topY(s)-18;g.save();g.translate(mx,my);g.fillStyle='#24172f';g.beginPath();g.moveTo(-10,0);g.lineTo(-8,-22);g.lineTo(0,-34);g.lineTo(8,-22);g.lineTo(10,0);g.fill();g.fillStyle=s?'#8ff2df':'#ffe08b';g.beginPath();g.arc(0,-35,7,0,7);g.fill();g.fillStyle='#b88aff';g.beginPath();g.moveTo(-10,-29);g.lineTo(0,-49);g.lineTo(10,-29);g.fill();g.strokeStyle='#fff0a0';g.lineWidth=3;g.beginPath();g.moveTo(8,-14);g.lineTo(19,-29+Math.sin(T*8)*4);g.stroke();for(let z=0;z<5;z++){g.fillStyle=z%2?'#a9f5ff':'#ffe78a';g.beginPath();g.arc(16+Math.sin(T*5+z)*5,-32-z*5,2.5,0,7);g.fill()}g.restore();g.fillStyle='#d9a7ff';g.font='bold 17px system-ui';g.textAlign='center';g.fillText('MAGE SUMMONING',s?1135:265,440)}}
+  for(const f of dragonFlames){if(f.t<=f.duration){g.save();g.globalAlpha=.9;const x=f.target?1120:280;g.strokeStyle='rgba(255,75,15,.35)';g.lineWidth=36;g.beginPath();g.moveTo(f.s?1125:275,530);g.quadraticCurveTo(700,470,x,570);g.stroke();g.strokeStyle='#ff5c1a';g.lineWidth=20;g.beginPath();g.moveTo(f.s?1125:275,530);g.quadraticCurveTo(700,470,x,570);g.stroke();g.fillStyle='#ffd33d';g.beginPath();g.ellipse(x,570,65,40,0,0,7);g.fill();g.fillStyle='#fff1a1';g.beginPath();g.ellipse(x,570,25,15,0,0,7);g.fill();g.restore()}}
   for(const c of clouds)cloud(((c[0]+T*8*c[2])%(W+200))-100,c[1],c[2]);
  for(const s of[0,1]){front(s);if(!twr[s].down)flag(s,245,topY(s));flag(s,65,490);bar(s)}drawPlots();
- const items=[...units,...civs].sort((a,b)=>a.y-b.y);for(const o of items){if(o.k==='u'){if(o.w>0)continue;(o.type=='c'?drawCav:o.type=='e'?drawEle:o.type=='t'?drawTb:drawInf)(o);if(o.hp<o.max){const hh={c:64,e:104,t:75,i:46}[o.type];g.fillStyle='#000';g.fillRect(o.x-12,o.y-hh,24,4);g.fillStyle='#e04b3a';g.fillRect(o.x-12,o.y-hh,24*o.hp/o.max,4)}}else drawCiv(o)}
- for(const p of proj)drawProj(p);
- for(const q of parts){g.globalAlpha=Math.max(0,q.l/q.m);g.fillStyle=q.c;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill()}g.globalAlpha=1;hud();
+ const items=[...units,...civs].sort((a,b)=>a.y-b.y);for(const o of items){if(o.k==='u'){if(o.w>0)continue;(o.type=='c'?drawCav:o.type=='e'?drawEle:o.type=='t'?drawTb:drawInf)(o);if(o.hp<o.max){const hh={c:64,e:104,t:75,i:46,g:46}[o.type];g.fillStyle='#000';g.fillRect(o.x-12,o.y-hh,24,4);g.fillStyle='#e04b3a';g.fillRect(o.x-12,o.y-hh,24*o.hp/o.max,4)}}else drawCiv(o)}
+ for(const p of proj)drawProj(p); for(const q of parts){g.globalAlpha=Math.max(0,q.l/q.m);g.fillStyle=q.c;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill()}g.globalAlpha=1;hud();
  if(gameOver){g.fillStyle='rgba(15,8,5,.68)';g.fillRect(0,0,W,H);g.textAlign='center';g.fillStyle='#ffd36b';g.font='900 72px system-ui,sans-serif';g.fillText(COL[winner].n.toUpperCase()+' KINGDOM WINS!',700,410);g.fillStyle='#fff';g.font='600 30px system-ui,sans-serif';g.fillText('The main castle has fallen. The war is over.',700,465);g.font='500 24px system-ui,sans-serif';g.fillText('Press R to restart',700,520)}
   if(paused){g.fillStyle='rgba(0,0,0,.4)';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.textAlign='center';g.font='800 80px system-ui,sans-serif';g.fillText('PAUSED',700,470)}}
 let last=performance.now();
